@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Zero 2 W Camera</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: white; }
+        .container { margin-top: 50px; }
+        img { max-width: 90%; border: 5px solid #444; border-radius: 8px; }
+        .controls { margin-top: 20px; }
+        button, select { padding: 10px; font-size: 16px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Raspberry Pi Camera Stream</h1>
+        <img src="/video_feed" id="stream">
+        
+        <div class="controls">
+            <select id="res-select">
+                <option value="640x480">640x480 (SD)</option>
+                <option value="1280x720">1280x720 (HD)</option>
+                <option value="1920x1080">1920x1080 (FHD)</option>
+            </select>
+            <button onclick="updateResolution()">Apply Resolution</button>
+            <button onclick="window.location.href='/capture'">Capture & Download</button>
+        </div>
+    </div>
+
+    <script>
+        function updateResolution() {
+            const res = document.getElementById('res-select').value.split('x');
+            fetch('/change_resolution', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ width: res[0], height: res[1] })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    // Refresh the image source to reconnect the stream
+                    const stream = document.getElementById('stream');
+                    stream.src = "/video_feed?" + new Date().getTime();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
