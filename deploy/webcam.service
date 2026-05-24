@@ -1,0 +1,66 @@
+# -----------------------------------------------------------------------------
+# Raspberry Pi Webcam systemd service template.
+#
+# Before installing, replace the placeholders below:
+#   <USER>         Linux user that owns the project (e.g. pi)
+#   <INSTALL_DIR>  Absolute path to the project (e.g. /home/pi/webcam)
+#   <PYTHON_BIN>   Absolute path to the system Python 3 interpreter
+#                  (find it with `which python3`, commonly /usr/bin/python3)
+#
+# This unit uses the SYSTEM Python interpreter directly (no venv, no uv) so
+# that the apt-installed `picamera2` package is importable. Install the other
+# Python dependencies system-wide via apt where possible:
+#
+#     sudo apt install python3-picamera2 python3-fastapi python3-uvicorn \
+#                      python3-pydantic python3-jinja2
+#
+# If a package isn't available via apt on your Raspberry Pi OS release, fall
+# back to:
+#
+#     sudo pip3 install --break-system-packages <package>
+#
+# See the project README for full install steps.
+# -----------------------------------------------------------------------------
+
+[Unit]
+Description=Raspberry Pi Webcam (FastAPI MJPEG streaming)
+Documentation=file://<INSTALL_DIR>/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<USER>
+Group=<USER>
+
+# Camera devices live in /dev/video* and require the `video` group.
+# If startup fails with permission errors on Bookworm, try adding `render`
+# (libcamera/v4l2 device nodes can land there): SupplementaryGroups=video render
+SupplementaryGroups=video
+
+WorkingDirectory=<INSTALL_DIR>
+
+# Optional env file with WEBCAM_* overrides (see webcam.env.example).
+# The leading `-` makes this file optional: the service still starts if it
+# does not exist, falling back to defaults baked into app.py.
+EnvironmentFile=-<INSTALL_DIR>/webcam.env
+
+# Run app.py with the system Python interpreter so the apt-installed
+# picamera2 module is importable.
+ExecStart=<PYTHON_BIN> app.py
+
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+
+# --- Hardening (lightweight; relax further if needed) ------------------------
+# ProtectSystem and ProtectHome are intentionally left disabled because the
+# project typically lives under /home/<USER>.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
