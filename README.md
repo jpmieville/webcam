@@ -181,3 +181,8 @@ sudo systemctl disable --now webcam   # stop and disable on boot
 - `deploy/install.sh`: automated installer (apt + systemd) for the Pi.
 - `deploy/webcam.service`: systemd unit template for running on boot.
 - `deploy/webcam.env.example`: example environment file for the unit.
+- `LICENSE`: MIT License.
+
+## License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
