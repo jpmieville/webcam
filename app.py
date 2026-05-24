@@ -1,7 +1,7 @@
 import io
 import time
 from fastapi import FastAPI, Request, HTTPException
-+from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
+from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from picamera2 import Picamera2
