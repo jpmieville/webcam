@@ -34,7 +34,7 @@
             fetch('/change_resolution', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ width: res[0], height: res[1] })
+                body: JSON.stringify({ width: parseInt(res[0], 10), height: parseInt(res[1], 10) })
             })
             .then(response => response.json())
             .then(data => {
