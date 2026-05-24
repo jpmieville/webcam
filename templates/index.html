@@ -3,48 +3,830 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Zero 2 W Camera</title>
+    <meta name="theme-color" content="#6750A4" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1C1B1F" media="(prefers-color-scheme: dark)">
+    <title>Pi Camera</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded" rel="stylesheet">
+
     <style>
-        body { font-family: sans-serif; text-align: center; background: #222; color: white; }
-        .container { margin-top: 50px; }
-        img { max-width: 90%; border: 5px solid #444; border-radius: 8px; }
-        .controls { margin-top: 20px; }
-        button, select { padding: 10px; font-size: 16px; margin: 5px; cursor: pointer; }
+        /* ---------- Material 3 design tokens ---------- */
+        :root {
+            color-scheme: light dark;
+
+            /* Primary palette (M3 baseline – violet) */
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-on-secondary: #FFFFFF;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-on-secondary-container: #1D192B;
+
+            --md-sys-color-tertiary: #7D5260;
+            --md-sys-color-on-tertiary: #FFFFFF;
+            --md-sys-color-tertiary-container: #FFD8E4;
+            --md-sys-color-on-tertiary-container: #31111D;
+
+            --md-sys-color-error: #B3261E;
+            --md-sys-color-on-error: #FFFFFF;
+            --md-sys-color-error-container: #F9DEDC;
+            --md-sys-color-on-error-container: #410E0B;
+
+            --md-sys-color-success: #146C2E;
+            --md-sys-color-success-container: #B8F0C2;
+            --md-sys-color-on-success-container: #002106;
+
+            --md-sys-color-background: #FEF7FF;
+            --md-sys-color-on-background: #1D1B20;
+            --md-sys-color-surface: #FEF7FF;
+            --md-sys-color-on-surface: #1D1B20;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+
+            --md-sys-color-surface-container-lowest: #FFFFFF;
+            --md-sys-color-surface-container-low: #F7F2FA;
+            --md-sys-color-surface-container: #F3EDF7;
+            --md-sys-color-surface-container-high: #ECE6F0;
+            --md-sys-color-surface-container-highest: #E6E0E9;
+
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-outline-variant: #CAC4D0;
+
+            /* Elevation (M3) */
+            --md-sys-elevation-1: 0 1px 2px 0 rgba(0,0,0,.30), 0 1px 3px 1px rgba(0,0,0,.15);
+            --md-sys-elevation-2: 0 1px 2px 0 rgba(0,0,0,.30), 0 2px 6px 2px rgba(0,0,0,.15);
+            --md-sys-elevation-3: 0 4px 8px 3px rgba(0,0,0,.15), 0 1px 3px 0 rgba(0,0,0,.30);
+
+            /* Shape */
+            --md-sys-shape-xs: 4px;
+            --md-sys-shape-sm: 8px;
+            --md-sys-shape-md: 12px;
+            --md-sys-shape-lg: 16px;
+            --md-sys-shape-xl: 28px;
+            --md-sys-shape-full: 999px;
+
+            /* Motion */
+            --md-sys-motion-emphasized: cubic-bezier(.2,0,0,1);
+            --md-sys-motion-standard: cubic-bezier(.2,0,0,1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --md-sys-color-primary: #D0BCFF;
+                --md-sys-color-on-primary: #381E72;
+                --md-sys-color-primary-container: #4F378B;
+                --md-sys-color-on-primary-container: #EADDFF;
+
+                --md-sys-color-secondary: #CCC2DC;
+                --md-sys-color-on-secondary: #332D41;
+                --md-sys-color-secondary-container: #4A4458;
+                --md-sys-color-on-secondary-container: #E8DEF8;
+
+                --md-sys-color-tertiary: #EFB8C8;
+                --md-sys-color-on-tertiary: #492532;
+                --md-sys-color-tertiary-container: #633B48;
+                --md-sys-color-on-tertiary-container: #FFD8E4;
+
+                --md-sys-color-error: #F2B8B5;
+                --md-sys-color-on-error: #601410;
+                --md-sys-color-error-container: #8C1D18;
+                --md-sys-color-on-error-container: #F9DEDC;
+
+                --md-sys-color-success: #7DD896;
+                --md-sys-color-success-container: #00531A;
+                --md-sys-color-on-success-container: #B8F0C2;
+
+                --md-sys-color-background: #141218;
+                --md-sys-color-on-background: #E6E0E9;
+                --md-sys-color-surface: #141218;
+                --md-sys-color-on-surface: #E6E0E9;
+                --md-sys-color-surface-variant: #49454F;
+                --md-sys-color-on-surface-variant: #CAC4D0;
+
+                --md-sys-color-surface-container-lowest: #0F0D13;
+                --md-sys-color-surface-container-low: #1D1B20;
+                --md-sys-color-surface-container: #211F26;
+                --md-sys-color-surface-container-high: #2B2930;
+                --md-sys-color-surface-container-highest: #36343B;
+
+                --md-sys-color-outline: #938F99;
+                --md-sys-color-outline-variant: #49454F;
+            }
+        }
+
+        /* Manual theme override (data-theme on <html>) */
+        html[data-theme="light"] {
+            color-scheme: light;
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-on-secondary-container: #1D192B;
+            --md-sys-color-error: #B3261E;
+            --md-sys-color-error-container: #F9DEDC;
+            --md-sys-color-on-error-container: #410E0B;
+            --md-sys-color-success: #146C2E;
+            --md-sys-color-success-container: #B8F0C2;
+            --md-sys-color-on-success-container: #002106;
+            --md-sys-color-background: #FEF7FF;
+            --md-sys-color-on-background: #1D1B20;
+            --md-sys-color-surface: #FEF7FF;
+            --md-sys-color-on-surface: #1D1B20;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+            --md-sys-color-surface-container-lowest: #FFFFFF;
+            --md-sys-color-surface-container-low: #F7F2FA;
+            --md-sys-color-surface-container: #F3EDF7;
+            --md-sys-color-surface-container-high: #ECE6F0;
+            --md-sys-color-surface-container-highest: #E6E0E9;
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-outline-variant: #CAC4D0;
+        }
+        html[data-theme="dark"] {
+            color-scheme: dark;
+            --md-sys-color-primary: #D0BCFF;
+            --md-sys-color-on-primary: #381E72;
+            --md-sys-color-primary-container: #4F378B;
+            --md-sys-color-on-primary-container: #EADDFF;
+            --md-sys-color-secondary: #CCC2DC;
+            --md-sys-color-secondary-container: #4A4458;
+            --md-sys-color-on-secondary-container: #E8DEF8;
+            --md-sys-color-error: #F2B8B5;
+            --md-sys-color-error-container: #8C1D18;
+            --md-sys-color-on-error-container: #F9DEDC;
+            --md-sys-color-success: #7DD896;
+            --md-sys-color-success-container: #00531A;
+            --md-sys-color-on-success-container: #B8F0C2;
+            --md-sys-color-background: #141218;
+            --md-sys-color-on-background: #E6E0E9;
+            --md-sys-color-surface: #141218;
+            --md-sys-color-on-surface: #E6E0E9;
+            --md-sys-color-surface-variant: #49454F;
+            --md-sys-color-on-surface-variant: #CAC4D0;
+            --md-sys-color-surface-container-lowest: #0F0D13;
+            --md-sys-color-surface-container-low: #1D1B20;
+            --md-sys-color-surface-container: #211F26;
+            --md-sys-color-surface-container-high: #2B2930;
+            --md-sys-color-surface-container-highest: #36343B;
+            --md-sys-color-outline: #938F99;
+            --md-sys-color-outline-variant: #49454F;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+        }
+
+        body {
+            font-family: 'Roboto Flex', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            background: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-background);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 200ms var(--md-sys-motion-standard),
+                        color 200ms var(--md-sys-motion-standard);
+        }
+
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            user-select: none;
+            line-height: 1;
+        }
+
+        /* ---------- Top App Bar ---------- */
+        .top-app-bar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            background: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            backdrop-filter: blur(8px);
+        }
+        .top-app-bar .leading {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--md-sys-shape-full);
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        .top-app-bar h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 500;
+            letter-spacing: 0;
+            flex: 1;
+            line-height: 28px;
+        }
+
+        /* ---------- Layout ---------- */
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px 16px 96px;
+            display: grid;
+            gap: 16px;
+        }
+
+        /* ---------- Card (filled / surface-container) ---------- */
+        .card {
+            background: var(--md-sys-color-surface-container-low);
+            color: var(--md-sys-color-on-surface);
+            border-radius: var(--md-sys-shape-lg);
+            padding: 16px;
+            transition: background-color 200ms var(--md-sys-motion-standard);
+        }
+        .card.elevated {
+            background: var(--md-sys-color-surface-container);
+            box-shadow: var(--md-sys-elevation-1);
+        }
+        .card .title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface-variant);
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            margin-bottom: 12px;
+        }
+
+        /* ---------- Stream ---------- */
+        .stream-card {
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+            border-radius: var(--md-sys-shape-xl);
+            box-shadow: var(--md-sys-elevation-2);
+            aspect-ratio: 4 / 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .stream-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .stream-overlay {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        /* ---------- Status chip ---------- */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: var(--md-sys-shape-sm);
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1;
+            background: var(--md-sys-color-surface-container-highest);
+            color: var(--md-sys-color-on-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            pointer-events: auto;
+            transition: background-color 200ms var(--md-sys-motion-standard),
+                        color 200ms var(--md-sys-motion-standard);
+        }
+        .chip .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--md-sys-color-outline);
+            box-shadow: 0 0 0 0 currentColor;
+        }
+        .chip[data-status="ok"] {
+            background: var(--md-sys-color-success-container);
+            color: var(--md-sys-color-on-success-container);
+            border-color: transparent;
+        }
+        .chip[data-status="ok"] .dot {
+            background: var(--md-sys-color-success);
+            color: var(--md-sys-color-success);
+            animation: pulse 2s infinite var(--md-sys-motion-standard);
+        }
+        .chip[data-status="degraded"] {
+            background: var(--md-sys-color-tertiary-container);
+            color: var(--md-sys-color-on-tertiary-container);
+            border-color: transparent;
+        }
+        .chip[data-status="degraded"] .dot { background: var(--md-sys-color-tertiary); }
+        .chip[data-status="error"] {
+            background: var(--md-sys-color-error-container);
+            color: var(--md-sys-color-on-error-container);
+            border-color: transparent;
+        }
+        .chip[data-status="error"] .dot { background: var(--md-sys-color-error); }
+
+        /* Only the ring pulses; the dot stays solid. color-mix lets us derive
+           a translucent shadow from currentColor so the animation adapts to
+           light/dark mode automatically. */
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0   color-mix(in srgb, currentColor 50%, transparent); }
+            70%  { box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 0%,  transparent); }
+            100% { box-shadow: 0 0 0 0   color-mix(in srgb, currentColor 0%,  transparent); }
+        }
+
+        /* ---------- Stats grid ---------- */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+        }
+        .stat {
+            background: var(--md-sys-color-surface-container);
+            border-radius: var(--md-sys-shape-md);
+            padding: 12px 14px;
+        }
+        .stat .label {
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-bottom: 4px;
+            font-weight: 500;
+            letter-spacing: .4px;
+        }
+        .stat .value {
+            font-size: 20px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        /* ---------- Controls / Buttons ---------- */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .controls .field {
+            flex: 1 1 200px;
+            min-width: 180px;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* M3 select wrapped to look like an outlined text field */
+        .select {
+            position: relative;
+            display: block;
+        }
+        .select select {
+            width: 100%;
+            appearance: none;
+            -webkit-appearance: none;
+            font: inherit;
+            font-size: 16px;
+            color: var(--md-sys-color-on-surface);
+            background: transparent;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: var(--md-sys-shape-xs);
+            padding: 14px 44px 14px 16px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 150ms var(--md-sys-motion-standard);
+        }
+        .select select:hover { border-color: var(--md-sys-color-on-surface); }
+        .select select:focus {
+            border-color: var(--md-sys-color-primary);
+            border-width: 2px;
+            padding: 13px 43px 13px 15px;
+        }
+        .select::after {
+            content: 'expand_more';
+            font-family: 'Material Symbols Rounded';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--md-sys-color-on-surface-variant);
+            pointer-events: none;
+            font-size: 24px;
+        }
+        .select label {
+            position: absolute;
+            top: -8px;
+            left: 12px;
+            padding: 0 4px;
+            /* Matches the surrounding .card.elevated background so the outline
+               appears notched around the label text. */
+            background: var(--md-sys-color-surface-container);
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        /* M3 buttons */
+        .btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 40px;
+            padding: 0 24px;
+            border: none;
+            border-radius: var(--md-sys-shape-full);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: .1px;
+            cursor: pointer;
+            user-select: none;
+            text-decoration: none;
+            overflow: hidden;
+            transition: box-shadow 150ms var(--md-sys-motion-standard),
+                        background-color 150ms var(--md-sys-motion-standard);
+        }
+        .btn:focus-visible {
+            outline: 2px solid var(--md-sys-color-primary);
+            outline-offset: 2px;
+        }
+        .btn .material-symbols-rounded {
+            font-size: 18px;
+            margin-left: -8px;
+        }
+        .btn[disabled] {
+            cursor: not-allowed;
+            opacity: .38;
+        }
+
+        /* state layer */
+        .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: currentColor;
+            opacity: 0;
+            transition: opacity 120ms var(--md-sys-motion-standard);
+            pointer-events: none;
+        }
+        .btn:hover:not([disabled])::before  { opacity: .08; }
+        .btn:focus-visible::before          { opacity: .12; }
+        .btn:active:not([disabled])::before { opacity: .12; }
+
+        .btn-filled {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+        }
+        .btn-filled:hover:not([disabled]) { box-shadow: var(--md-sys-elevation-1); }
+
+        .btn-tonal {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+        }
+
+        .btn-outlined {
+            background: transparent;
+            color: var(--md-sys-color-primary);
+            border: 1px solid var(--md-sys-color-outline);
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--md-sys-shape-full);
+            background: transparent;
+            color: var(--md-sys-color-on-surface-variant);
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 150ms var(--md-sys-motion-standard);
+        }
+        .icon-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: currentColor;
+            opacity: 0;
+            transition: opacity 120ms var(--md-sys-motion-standard);
+        }
+        .icon-btn:hover::before         { opacity: .08; }
+        .icon-btn:focus-visible::before { opacity: .12; }
+        .icon-btn:active::before        { opacity: .12; }
+
+        /* ---------- Snackbar ---------- */
+        .snackbar {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translate(-50%, 32px);
+            min-width: 280px;
+            max-width: calc(100vw - 32px);
+            background: var(--md-sys-color-on-surface);
+            color: var(--md-sys-color-surface);
+            padding: 14px 16px;
+            border-radius: var(--md-sys-shape-xs);
+            box-shadow: var(--md-sys-elevation-3);
+            font-size: 14px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 200ms var(--md-sys-motion-standard),
+                        transform 200ms var(--md-sys-motion-standard);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .snackbar.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+            pointer-events: auto;
+        }
+        .snackbar.error { background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
+
+        /* ---------- Linear progress ---------- */
+        .progress {
+            position: relative;
+            height: 4px;
+            border-radius: var(--md-sys-shape-full);
+            background: var(--md-sys-color-surface-container-highest);
+            overflow: hidden;
+            display: none;
+        }
+        .progress.show { display: block; }
+        .progress::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--md-sys-color-primary);
+            animation: indeterminate 1.5s infinite var(--md-sys-motion-standard);
+            transform-origin: 0 0;
+        }
+        @keyframes indeterminate {
+            0%   { transform: translateX(-100%) scaleX(.3); }
+            50%  { transform: translateX(20%)  scaleX(.5); }
+            100% { transform: translateX(120%) scaleX(.3); }
+        }
+
+        @media (max-width: 480px) {
+            .top-app-bar h1 { font-size: 18px; }
+            main { padding: 16px 12px 96px; }
+            .actions { width: 100%; }
+            .actions .btn { flex: 1; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Raspberry Pi Camera Stream</h1>
-        <img src="/video_feed" id="stream">
-        
-        <div class="controls">
-            <select id="res-select">
-                <option value="640x480">640x480 (SD)</option>
-                <option value="1280x720">1280x720 (HD)</option>
-                <option value="1920x1080">1920x1080 (FHD)</option>
-            </select>
-            <button onclick="updateResolution()">Apply Resolution</button>
-            <button onclick="window.location.href='/capture'">Capture & Download</button>
-        </div>
+    <header class="top-app-bar">
+        <span class="leading" aria-hidden="true">
+            <span class="material-symbols-rounded">photo_camera</span>
+        </span>
+        <h1>Pi Camera</h1>
+        <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle theme" title="Toggle theme">
+            <span class="material-symbols-rounded" id="theme-icon">dark_mode</span>
+        </button>
+    </header>
+
+    <main>
+        <!-- Live stream -->
+        <section class="stream-card" aria-label="Live camera stream">
+            <img src="/video_feed" id="stream" alt="Live camera stream">
+            <div class="stream-overlay">
+                <span class="chip" id="status-chip" data-status="unknown" title="Camera status">
+                    <span class="dot"></span>
+                    <span id="status-text">Connecting…</span>
+                </span>
+                <span class="chip" id="fps-chip" title="Measured frames per second">
+                    <span class="material-symbols-rounded" style="font-size:16px">speed</span>
+                    <span id="fps-text">– fps</span>
+                </span>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="card elevated" aria-label="Camera statistics">
+            <div class="title">Status</div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="label">Resolution</div>
+                    <div class="value" id="stat-res">–</div>
+                </div>
+                <div class="stat">
+                    <div class="label">Measured FPS</div>
+                    <div class="value" id="stat-fps">–</div>
+                </div>
+                <div class="stat">
+                    <div class="label">Total frames</div>
+                    <div class="value" id="stat-frames">–</div>
+                </div>
+                <div class="stat">
+                    <div class="label">Uptime</div>
+                    <div class="value" id="stat-uptime">–</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controls -->
+        <section class="card elevated" aria-label="Camera controls">
+            <div class="title">Controls</div>
+            <div class="controls">
+                <div class="field">
+                    <div class="select">
+                        <label for="res-select">Resolution</label>
+                        <select id="res-select">
+                            <option value="640x480">640 × 480 (SD)</option>
+                            <option value="1280x720">1280 × 720 (HD)</option>
+                            <option value="1920x1080">1920 × 1080 (FHD)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-tonal" id="apply-btn" type="button">
+                        <span class="material-symbols-rounded">aspect_ratio</span>
+                        Apply
+                    </button>
+                    <a class="btn btn-filled" href="/capture" id="capture-btn">
+                        <span class="material-symbols-rounded">download</span>
+                        Capture
+                    </a>
+                </div>
+            </div>
+            <div class="progress" id="progress" role="progressbar" aria-label="Working" style="margin-top:16px"></div>
+        </section>
+    </main>
+
+    <div class="snackbar" id="snackbar" role="status" aria-live="polite">
+        <span class="material-symbols-rounded" id="snackbar-icon" style="font-size:20px">info</span>
+        <span id="snackbar-text"></span>
     </div>
 
     <script>
-        function updateResolution() {
-            const res = document.getElementById('res-select').value.split('x');
-            fetch('/change_resolution', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ width: parseInt(res[0], 10), height: parseInt(res[1], 10) })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    // Refresh the image source to reconnect the stream
-                    const stream = document.getElementById('stream');
-                    stream.src = "/video_feed?" + new Date().getTime();
-                }
-            });
+        // ---------- Theme handling ----------
+        (function initTheme() {
+            const stored = localStorage.getItem('theme');
+            if (stored === 'light' || stored === 'dark') {
+                document.documentElement.setAttribute('data-theme', stored);
+            }
+            updateThemeIcon();
+        })();
+
+        function currentTheme() {
+            const explicit = document.documentElement.getAttribute('data-theme');
+            if (explicit) return explicit;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
+
+        function updateThemeIcon() {
+            const icon = document.getElementById('theme-icon');
+            icon.textContent = currentTheme() === 'dark' ? 'light_mode' : 'dark_mode';
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const next = currentTheme() === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            updateThemeIcon();
+        });
+
+        // ---------- Snackbar ----------
+        let snackbarTimer = null;
+        function showSnackbar(message, kind = 'info') {
+            const snackbar = document.getElementById('snackbar');
+            const text = document.getElementById('snackbar-text');
+            const icon = document.getElementById('snackbar-icon');
+            text.textContent = message;
+            snackbar.classList.toggle('error', kind === 'error');
+            icon.textContent = kind === 'error' ? 'error' : (kind === 'success' ? 'check_circle' : 'info');
+            snackbar.classList.add('show');
+            clearTimeout(snackbarTimer);
+            snackbarTimer = setTimeout(() => snackbar.classList.remove('show'), 3000);
+        }
+
+        // ---------- Resolution change ----------
+        const applyBtn = document.getElementById('apply-btn');
+        const progress = document.getElementById('progress');
+
+        applyBtn.addEventListener('click', async () => {
+            const res = document.getElementById('res-select').value.split('x');
+            const width = parseInt(res[0], 10);
+            const height = parseInt(res[1], 10);
+
+            applyBtn.disabled = true;
+            progress.classList.add('show');
+
+            try {
+                const response = await fetch('/change_resolution', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ width, height })
+                });
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok && data.status === 'success') {
+                    const stream = document.getElementById('stream');
+                    stream.src = '/video_feed?' + Date.now();
+                    showSnackbar(`Resolution set to ${width} × ${height}`, 'success');
+                    refreshHealth();
+                } else {
+                    showSnackbar(data.detail || 'Failed to change resolution', 'error');
+                }
+            } catch (err) {
+                showSnackbar('Network error: ' + err.message, 'error');
+            } finally {
+                applyBtn.disabled = false;
+                progress.classList.remove('show');
+            }
+        });
+
+        // ---------- Health polling ----------
+        function formatUptime(seconds) {
+            if (seconds == null || isNaN(seconds)) return '–';
+            const s = Math.floor(seconds);
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            if (d) return `${d}d ${h}h`;
+            if (h) return `${h}h ${m}m`;
+            if (m) return `${m}m ${sec}s`;
+            return `${sec}s`;
+        }
+
+        async function refreshHealth() {
+            try {
+                const r = await fetch('/health', { cache: 'no-store' });
+                const data = await r.json();
+
+                const statusChip = document.getElementById('status-chip');
+                const statusText = document.getElementById('status-text');
+                const status = data.status || 'unknown';
+                statusChip.dataset.status = status;
+                statusText.textContent = status === 'ok' ? 'Live'
+                                       : status === 'degraded' ? 'Degraded'
+                                       : status === 'error' ? 'Error'
+                                       : 'Unknown';
+
+                const measured = data.fps && data.fps.measured != null ? data.fps.measured : null;
+                document.getElementById('fps-text').textContent =
+                    measured != null ? `${measured} fps` : '– fps';
+
+                const w = data.resolution && data.resolution.width;
+                const h = data.resolution && data.resolution.height;
+                document.getElementById('stat-res').textContent =
+                    (w && h) ? `${w} × ${h}` : '–';
+                document.getElementById('stat-fps').textContent =
+                    measured != null ? measured : '–';
+                document.getElementById('stat-frames').textContent =
+                    data.total_frames != null ? data.total_frames.toLocaleString() : '–';
+                document.getElementById('stat-uptime').textContent =
+                    formatUptime(data.uptime_seconds);
+            } catch (err) {
+                const statusChip = document.getElementById('status-chip');
+                statusChip.dataset.status = 'error';
+                document.getElementById('status-text').textContent = 'Offline';
+            }
+        }
+
+        // Poll /health, but pause while the tab is hidden to spare the Pi.
+        let healthTimer = null;
+        function startHealthPolling() {
+            if (healthTimer != null) return;
+            refreshHealth();
+            healthTimer = setInterval(refreshHealth, 2000);
+        }
+        function stopHealthPolling() {
+            if (healthTimer == null) return;
+            clearInterval(healthTimer);
+            healthTimer = null;
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) stopHealthPolling();
+            else startHealthPolling();
+        });
+        startHealthPolling();
     </script>
 </body>
 </html>
