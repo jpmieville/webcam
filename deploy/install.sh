@@ -80,6 +80,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 INSTALL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 UNIT_TEMPLATE="$SCRIPT_DIR/webcam.service"
 ENV_TEMPLATE="$SCRIPT_DIR/webcam.env.example"
+CONFIG_TEMPLATE="$SCRIPT_DIR/config.toml.example"
 
 [[ -f "$UNIT_TEMPLATE" ]] || die "unit template not found at $UNIT_TEMPLATE"
 [[ -f "$INSTALL_DIR/app.py" ]] || die "app.py not found at $INSTALL_DIR (is the project layout intact?)"
@@ -133,7 +134,16 @@ declare -A PIP_FOR_MODULE=(
     [uvicorn]=uvicorn
     [pydantic]=pydantic
     [jinja2]=jinja2
+    # suntime computes daily sunrise/sunset for the scheduled-capture loop;
+    # not packaged in apt, so always pip-installed if missing.
+    [suntime]=suntime
 )
+
+# tomllib is stdlib on Python 3.11+ (Bookworm). On Python <3.11 (e.g. Bullseye)
+# we need the `tomli` shim. Detect that and add to the pip fallback list.
+if ! "$PYTHON_BIN" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null; then
+    PIP_FOR_MODULE[tomli]=tomli
+fi
 PIP_MISSING=()
 for mod in "${!PIP_FOR_MODULE[@]}"; do
     if ! "$PYTHON_BIN" -c "import $mod" >/dev/null 2>&1; then
@@ -173,12 +183,27 @@ fi
 
 install -m 0644 "$TMP_UNIT" "$UNIT_DEST"
 
-# ---- 4. seed an env file if one isn't already present -----------------------
+# ---- 4. seed env + TOML config files if not already present ----------------
+SERVICE_GROUP="$(id -gn "$SERVICE_USER")"
+
 ENV_DEST="$INSTALL_DIR/webcam.env"
 if [[ ! -f "$ENV_DEST" && -f "$ENV_TEMPLATE" ]]; then
-    SERVICE_GROUP="$(id -gn "$SERVICE_USER")"
     log "Seeding $ENV_DEST from webcam.env.example (all values commented out)"
     install -m 0644 -o "$SERVICE_USER" -g "$SERVICE_GROUP" "$ENV_TEMPLATE" "$ENV_DEST"
+fi
+
+CONFIG_DEST="$INSTALL_DIR/config.toml"
+if [[ ! -f "$CONFIG_DEST" && -f "$CONFIG_TEMPLATE" ]]; then
+    log "Seeding $CONFIG_DEST from config.toml.example (edit to set your latitude/longitude)"
+    install -m 0644 -o "$SERVICE_USER" -g "$SERVICE_GROUP" "$CONFIG_TEMPLATE" "$CONFIG_DEST"
+fi
+
+# Ensure the captures dir exists and is owned by the service user, so the
+# scheduled-capture loop can write photos without permission errors.
+CAPTURES_DIR="$INSTALL_DIR/captures"
+if [[ ! -d "$CAPTURES_DIR" ]]; then
+    log "Creating $CAPTURES_DIR (owned by $SERVICE_USER:$SERVICE_GROUP)"
+    install -d -m 0755 -o "$SERVICE_USER" -g "$SERVICE_GROUP" "$CAPTURES_DIR"
 fi
 
 # ---- 5. enable / start ------------------------------------------------------
@@ -217,7 +242,9 @@ if [[ -f "$ENV_DEST" ]]; then
 fi
 
 log "Done."
-log "URL    : http://${WEBCAM_HOST_RESOLVED}:${WEBCAM_PORT_RESOLVED}/  (replace 0.0.0.0 with the Pi's IP)"
-log "Status : sudo systemctl status ${SERVICE_NAME}"
-log "Logs   : sudo journalctl -u ${SERVICE_NAME} -f"
-log "Config : edit $ENV_DEST then sudo systemctl restart ${SERVICE_NAME}"
+log "URL      : http://${WEBCAM_HOST_RESOLVED}:${WEBCAM_PORT_RESOLVED}/  (replace 0.0.0.0 with the Pi's IP)"
+log "Live UI  : http://${WEBCAM_HOST_RESOLVED}:${WEBCAM_PORT_RESOLVED}/live"
+log "Status   : sudo systemctl status ${SERVICE_NAME}"
+log "Logs     : sudo journalctl -u ${SERVICE_NAME} -f"
+log "Env file : edit $ENV_DEST then sudo systemctl restart ${SERVICE_NAME}"
+log "Location : edit $CONFIG_DEST (latitude/longitude/interval) then sudo systemctl restart ${SERVICE_NAME}"

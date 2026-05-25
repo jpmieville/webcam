@@ -3,9 +3,11 @@
 This project is a high-performance web application built with **FastAPI** to stream video and capture images from a Raspberry Pi Zero 2 W using the official `picamera2` library.
 
 ## Features
-- **Real-time MJPEG Streaming**: Low-latency video feed accessible via any web browser.
-- **Dynamic Resolution Switching**: Change camera resolution (SD, HD, FHD) on-the-fly without restarting the server.
-- **Image Capture**: Capture high-quality JPEG images and download them directly from the interface.
+- **Daily Photo Gallery (`/`)**: Hero shot of the latest capture plus a thumbnail grid of today's photos.
+- **Sunrise-to-Sunset Time-Lapse**: Automatic high-resolution captures every N seconds during daylight, computed each day for your location with [`suntime`](https://github.com/SatAgro/suntime).
+- **Real-time MJPEG Streaming (`/live`)**: Low-latency video feed accessible via any web browser.
+- **Dynamic Resolution Switching**: Change stream resolution (SD, HD, FHD) on-the-fly without restarting the server.
+- **On-demand Capture**: Save the current frame as a JPEG download from the live UI.
 - **Health Endpoint**: `/health` exposes camera status (running, FPS, resolution, error counters) for monitoring tools.
 - **Prometheus Metrics**: `/metrics` exposes counters and gauges in Prometheus exposition format for scraping.
 - **Asynchronous Backend**: Leverages FastAPI and Uvicorn for efficient handling of concurrent stream requests.
@@ -28,9 +30,22 @@ This project runs against the **system Python interpreter** (no virtualenv, no `
 
    > **Note for Bullseye users**: `python3-fastapi` and `python3-uvicorn` are only packaged on **Bookworm**. On Bullseye, install just `python3-picamera2` and `python3-jinja2` via apt, then use the pip fallback below for the rest.
 
-2. **Fallback for any missing package** (recent Raspberry Pi OS releases enforce PEP 668; the flag below opts into a system-wide pip install anyway):
+2. **Install pip-only deps** (`suntime` is not packaged in apt; on Python <3.11, also need the `tomli` shim for TOML parsing):
+   ```bash
+   sudo pip3 install --break-system-packages suntime
+   # Bullseye / Python <3.11 only:
+   # sudo pip3 install --break-system-packages tomli
+   ```
+
+3. **Fallback for any missing package** (recent Raspberry Pi OS releases enforce PEP 668; the flag below opts into a system-wide pip install anyway):
    ```bash
    sudo pip3 install --break-system-packages fastapi uvicorn pydantic jinja2
+   ```
+
+4. **Configure your location**: copy the example config and edit your latitude/longitude:
+   ```bash
+   cp deploy/config.toml.example config.toml
+   $EDITOR config.toml   # set [location].latitude and [location].longitude
    ```
 
 ## Running the Application
@@ -39,23 +54,67 @@ Start the server by running `app.py` with the system Python:
 ```bash
 python3 app.py
 ```
-The application will be available at `http://<your-pi-ip>:5000`.
+
+- `http://<your-pi-ip>:5000/` &mdash; **Today's photos**: hero (latest capture) + thumbnail gallery.
+- `http://<your-pi-ip>:5000/live` &mdash; **Live stream** with on-demand capture button.
+
+While the server is running, a background scheduler captures a still photo at the camera's **sensor maximum resolution** every `interval_seconds` (default 5 minutes) **between sunrise and sunset** for the configured location. Photos are saved under `captures/YYYY-MM-DD/HHMMSS.jpg`.
 
 ## Configuration
 
-The following environment variables can be set to tune runtime behavior. All settings fall back to safe defaults on missing/invalid/out-of-range values, with a warning logged so misconfiguration is visible.
+Runtime behavior is controlled by **two configuration sources**:
+
+1. **`config.toml`** &mdash; static, structured settings (location, capture cadence, photo directory). Recommended path: `<project>/config.toml`. Override the path with the `WEBCAM_CONFIG` env var.
+2. **Environment variables** &mdash; server-side runtime knobs (host, port, stream FPS, default stream resolution).
+
+Both fall back to safe defaults on missing/invalid/out-of-range values, with a warning logged so misconfiguration is visible.
+
+### `config.toml` schema
+
+```toml
+[location]
+latitude  = 46.5197      # WGS84 decimal degrees, range [-90, 90]
+longitude = 6.6323       # WGS84 decimal degrees, range [-180, 180]
+name      = "Home"      # optional, displayed in the UI
+
+[capture]
+interval_seconds = 300   # range [5, 86400] (5s → 24h). Default 300 (5 min).
+directory        = "captures"   # absolute or relative to the project root.
+```
+
+A fully-commented template lives at [`deploy/config.toml.example`](deploy/config.toml.example). The `install.sh` script seeds it for you on first run.
+
+### Environment variables
 
 | Variable | Default | Range | Purpose |
 |----------|---------|-------|---------|
 | `WEBCAM_FPS` | `15` | `1`–`60` | Caps the MJPEG stream frame rate. Lower values reduce CPU usage on the Pi Zero 2 W. |
 | `WEBCAM_HOST` | `0.0.0.0` | non-empty string | Network interface uvicorn binds to. Use `127.0.0.1` to restrict to localhost. |
 | `WEBCAM_PORT` | `5000` | `1`–`65535` | TCP port uvicorn listens on. |
-| `WEBCAM_DEFAULT_RESOLUTION` | `640x480` | `WxH`, each `16`–`4096` | Initial camera resolution at startup (can still be changed at runtime via the UI). |
+| `WEBCAM_DEFAULT_RESOLUTION` | `640x480` | `WxH`, each `16`–`4096` | Initial **stream** resolution at startup (can be changed at runtime via the UI). Scheduled captures always use the sensor's full resolution. |
+| `WEBCAM_CONFIG` | `<project>/config.toml` | path | Override the path to `config.toml`. |
 
 Example:
 ```bash
-WEBCAM_FPS=10 WEBCAM_PORT=8080 WEBCAM_DEFAULT_RESOLUTION=1280x720 python app.py
+WEBCAM_FPS=10 WEBCAM_PORT=8080 WEBCAM_DEFAULT_RESOLUTION=1280x720 python3 app.py
 ```
+
+## Photo Gallery
+
+The home page (`/`) shows:
+- The **latest** capture as a hero image.
+- A **thumbnail grid** of all of today's captures (newest first), with click-to-zoom.
+- Today's **sunrise / sunset** times and the configured capture interval.
+- A status chip showing whether the scheduler is currently capturing (daytime) or paused (night).
+
+### API endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/photos` | List today's captures. Query param `?date=YYYY-MM-DD` for a specific day. |
+| `GET /api/dates` | List all dates that have at least one capture. |
+| `GET /api/sun` | Today's sunrise/sunset (UTC), `is_daytime` flag, and `next_sunrise`. |
+| `GET /photos/<date>/<file>` | Static-served captured JPEG (mounted on the capture directory). |
 
 ## Health Check
 
@@ -176,11 +235,15 @@ sudo systemctl disable --now webcam   # stop and disable on boot
 ```
 
 ## Project Structure
-- `app.py`: The main FastAPI application logic and camera control.
-- `templates/index.html`: The frontend user interface.
-- `deploy/install.sh`: automated installer (apt + systemd) for the Pi.
+- `app.py`: FastAPI application, camera control, capture scheduler.
+- `templates/index.html`: Home page — today's photo gallery.
+- `templates/live.html`: Live stream UI (served at `/live`).
+- `config.toml` (created from the example): location & capture settings.
+- `captures/YYYY-MM-DD/HHMMSS.jpg`: scheduled captures, organized by day.
+- `deploy/install.sh`: automated installer (apt + pip + systemd) for the Pi.
 - `deploy/webcam.service`: systemd unit template for running on boot.
 - `deploy/webcam.env.example`: example environment file for the unit.
+- `deploy/config.toml.example`: example TOML config (location/capture).
 - `LICENSE`: MIT License.
 
 ## License

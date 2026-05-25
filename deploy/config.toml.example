@@ -1,0 +1,30 @@
+# Raspberry Pi Webcam — runtime configuration.
+#
+# Copy this file to `config.toml` in the project root and edit the values.
+# The path can also be overridden with the WEBCAM_CONFIG environment variable.
+#
+# All sections are optional. Missing values fall back to the defaults baked
+# into app.py; invalid values fall back with a warning logged.
+
+[location]
+# Geographic coordinates used to compute sunrise/sunset each day.
+# WGS84 decimal degrees. North/East positive; South/West negative.
+# Defaults below are roughly Lausanne, Switzerland — change to your site.
+latitude  = 46.5197
+longitude = 6.6323
+
+# Optional human-readable name shown in the UI.
+name = "Home"
+
+
+[capture]
+# Interval (seconds) between scheduled captures during daylight.
+# Captures are skipped when the sun is below the horizon.
+# Range: 5..86400. Default: 300 (5 minutes).
+interval_seconds = 300
+
+# Directory where captured JPEGs are saved. Either an absolute path or a
+# path relative to the project root (where app.py lives). Photos are
+# organized as <directory>/YYYY-MM-DD/HHMMSS.jpg.
+# Default: "captures".
+directory = "captures"
